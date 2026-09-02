@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>王国小游戏</title>
+  <style>
+    :root {
+      --gold: #d4af37;
+      --gold-light: #f0d98c;
+      --parchment: #f5ecd7;
+      --parchment-dark: #e8d9b5;
+      --ink: #2f2413;
+      --muted: #7a6a4f;
+      --danger: #b4453c;
+      --good: #3d7a3d;
+      --bg1: #1d2b23;
+      --bg2: #2c3e2e;
+      --panel: rgba(245, 236, 215, 0.96);
+      --shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      --radius: 14px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+      color: var(--ink);
+      min-height: 100vh;
+      background: radial-gradient(ellipse at top, var(--bg2), var(--bg1) 70%);
+      padding: 20px 16px 40px;
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    /* 顶栏 */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+      color: var(--gold-light);
+    }
+
+    .topbar h1 {
+      font-size: 1.7rem;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    .topbar .year-badge {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--gold);
+      color: var(--gold-light);
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+
+    .btn-plain {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--gold);
+      color: var(--gold-light);
+      padding: 6px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: transform 0.15s, background 0.2s;
+    }
+
+    .btn-plain:hover { background: rgba(212, 175, 55, 0.25); transform: translateY(-1px); }
+
+    /* 资源面板 */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .stat {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+    }
+
+    .stat .label {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .stat .value {
+      font-size: 1.35rem;
+      font-weight: 800;
+    }
+
+    .stat .value.negative { color: var(--danger); }
+
+    .bar {
+      height: 8px;
+      background: var(--parchment-dark);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar > div {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--gold-light));
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+
+    /* 主布局 */
+    .layout {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      border: 1px solid rgba(212, 175, 55, 0.35);
+    }
+
+    .panel h2 {
+      font-size: 1.15rem;
+      margin-bottom: 8px;
+    }
+
+    .panel .desc {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 14px;
+    }
+
+    /* 行动按钮 */
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .action-btn {
+      background: var(--parchment-dark);
+      border: 1px solid rgba(212, 175, 55, 0.5);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 0.15s, background 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+      color: var(--ink);
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      background: var(--gold-light);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+    }
+
+    .action-btn .name { font-weight: 700; font-size: 1rem; }
+    .action-btn .cost { font-size: 0.82rem; color: var(--muted); margin-top: 3px; }
+
+    .action-btn.disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .tax-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .tax-row .hint { font-size: 0.85rem; color: var(--muted); }
+
+    .tax-btn {
+      border: 1px solid rgba(212, 175, 55, 0.5);
+      background: var(--parchment-dark);
+      color: var(--ink);
+      padding: 5px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+    }
+
+    .tax-btn.active {
+      background: var(--gold);
+      color: #2f2413;
+      font-weight: 700;
+    }
+
+    /* 事件与选择 */
+    .event-title { font-size: 1.25rem; margin-bottom: 8px; }
+    .event-desc { color: var(--muted); margin-bottom: 16px; }
+
+    .choice-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: var(--parchment-dark);
+      border: 1px solid rgba(212, 175, 55, 0.5);
+      border-radius: 12px;
+      padding: 13px 16px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 1rem;
+      color: var(--ink);
+      transition: transform 0.15s, background 0.2s;
+    }
+
+    .choice-btn:hover {
+      background: var(--gold-light);
+      transform: translateX(3px);
+    }
+
+    .summary {
+      background: rgba(212, 175, 55, 0.12);
+      border: 1px dashed var(--gold);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+      line-height: 1.8;
+    }
+
+    .summary .line { display: block; }
+    .summary .good { color: var(--good); font-weight: 600; }
+    .summary .bad { color: var(--danger); font-weight: 600; }
+
+    /* 日志 */
+    .log {
+      max-height: 560px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 4px;
+    }
+
+    .log-item {
+      background: rgba(255, 255, 255, 0.45);
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 0.88rem;
+      border-left: 3px solid var(--gold);
+      line-height: 1.55;
+    }
+
+    .log-item .t { color: var(--muted); font-size: 0.78rem; }
+
+    /* 弹层 */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(18, 26, 20, 0.88);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 200;
+    }
+
+    .overlay.hidden { display: none; }
+
+    .modal {
+      background: var(--panel);
+      border-radius: 18px;
+      max-width: 540px;
+      width: 100%;
+      padding: 34px 30px;
+      text-align: center;
+      border: 2px solid var(--gold);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal .big { font-size: 3rem; }
+    .modal h2 { font-size: 1.7rem; margin: 10px 0 8px; }
+    .modal p { color: var(--muted); margin-bottom: 12px; line-height: 1.8; }
+    .modal .rule-list {
+      text-align: left;
+      display: inline-block;
+      color: var(--ink);
+      margin: 6px 0 18px;
+      line-height: 2;
+    }
+
+    .modal .rule-list li::marker { color: var(--gold); }
+
+    .btn-main {
+      background: linear-gradient(180deg, var(--gold-light), var(--gold));
+      color: #2f2413;
+      border: none;
+      font-weight: 800;
+      font-size: 1.05rem;
+      padding: 12px 38px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+      transition: transform 0.15s;
+    }
+
+    .btn-main:hover { transform: translateY(-2px); }
+
+    .ending-stats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin: 16px 0 20px;
+    }
+
+    .ending-stats .e {
+      background: var(--parchment-dark);
+      border-radius: 10px;
+      padding: 8px 4px;
+      font-size: 0.85rem;
+    }
+
+    .ending-stats .e b { display: block; font-size: 1.15rem; }
+
+    @media (max-width: 760px) {
+      .layout { grid-template-columns: 1fr; }
+      .actions { grid-template-columns: 1fr; }
+      .topbar h1 { font-size: 1.3rem; }
+      .ending-stats { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <h1>👑 王国小游戏</h1>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <span class="year-badge" id="yearBadge">第 1 年</span>
+        <button class="btn-plain" onclick="restart()">重新开始</button>
+      </div>
+    </header>
+
+    <section class="stats" id="stats">
+      <div class="stat"><span class="label">🪙 金币</span><span class="value" id="statGold">0</span></div>
+      <div class="stat"><span class="label">🌾 粮食</span><span class="value" id="statFood">0</span></div>
+      <div class="stat"><span class="label">👥 人口</span><span class="value" id="statPop">0</span></div>
+      <div class="stat"><span class="label">⚔️ 军队</span><span class="value" id="statArmy">0</span></div>
+      <div class="stat">
+        <span class="label">❤️ 民心</span>
+        <span class="value" id="statMorale">0</span>
+        <div class="bar"><div id="moraleBar" style="width:100%"></div></div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <main class="panel" id="mainPanel">
+        <div id="turnView">
+          <h2 id="turnTitle">第 1 年 · 王国政务</h2>
+          <p class="desc" id="turnDesc">选择一项本年度要推行的政令。</p>
+          <div class="actions" id="actionList"></div>
+          <div class="tax-row">
+            <span class="hint">税率：</span>
+            <button class="tax-btn" data-rate="low" onclick="setTax('low')">低税</button>
+            <button class="tax-btn active" data-rate="normal" onclick="setTax('normal')">正常</button>
+            <button class="tax-btn" data-rate="high" onclick="setTax('high')">高税</button>
+            <span class="hint" id="taxHint"></span>
+          </div>
+        </div>
+        <div id="eventView" class="hidden" style="display:none"></div>
+      </main>
+
+      <aside class="panel">
+        <h2>📜 王国编年史</h2>
+        <div class="log" id="log"></div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- 开始界面 -->
+  <div class="overlay" id="startOverlay">
+    <div class="modal">
+      <div class="big">🏰</div>
+      <h2>欢迎来到你的王国</h2>
+      <p>你是一位年轻的君主。治理王国，让它繁荣二十年，成为伟大的国度。</p>
+      <ul class="rule-list">
+        <li>每年推行政令并应对随机事件</li>
+        <li>税收带来金币，粮食供养人口与军队</li>
+        <li>粮食不足会饿死人，民心归零会亡国</li>
+        <li>20 年后人口达到 100 即为胜利 🎉</li>
+      </ul>
+      <button class="btn-main" onclick="startGame()">开始统治</button>
+    </div>
+  </div>
+
+  <!-- 结局界面 -->
+  <div class="overlay hidden" id="endOverlay">
+    <div class="modal">
+      <div class="big" id="endIcon">👑</div>
+      <h2 id="endTitle">结局</h2>
+      <p id="endDesc"></p>
+      <div class="ending-stats" id="endStats"></div>
+      <button class="btn-main" onclick="restart()">再来一次</button>
+    </div>
+  </div>
+
+  <script>
+    // ---------- 游戏状态 ----------
+    let state = {};
+
+    const TAX_INFO = {
+      low:    { label: "低税", income: 1.0, morale: 1 },
+      normal: { label: "正常", income: 1.5, morale: 0 },
+      high:   { label: "高税", income: 2.5, morale: -3 }
+    };
+
+    const ACTIONS = [
+      { id: "recruit", icon: "⚔️", name: "招募军队", cost: "20 金币 + 10 粮食", effect: s => {
+          s.gold -= 20; s.food -= 10; s.army += 5; s.morale = clamp(s.morale + 2, 0, 100);
+          addLog(`⚔️ 新兵入伍，军队 +5。`);
+      }},
+      { id: "farm", icon: "🌾", name: "兴修农田", cost: "30 金币", effect: s => {
+          s.gold -= 30; s.farms += 1;
+          addLog(`🌾 开垦新田，粮食产量 +20。`);
+      }},
+      { id: "festival", icon: "🎉", name: "举办庆典", cost: "25 金币", effect: s => {
+          s.gold -= 25; s.morale = clamp(s.morale + 10, 0, 100);
+          addLog(`🎉 举国欢庆，民心 +10。`);
+      }},
+      { id: "charity", icon: "🤝", name: "施舍民众", cost: "20 金币", effect: s => {
+          s.gold -= 20; s.morale = clamp(s.morale + 6, 0, 100); s.population += 3;
+          addLog(`🤝 饥民得到救助，民心 +6，人口 +3。`);
+      }},
+      { id: "invest", icon: "💰", name: "商业投资", cost: "40 金币（有风险）", effect: s => {
+          s.gold -= 40;
+          if (Math.random() < 0.55) {
+            const gain = 50 + Math.floor(Math.random() * 40);
+            s.gold += gain;
+            addLog(`💰 商队满载而归，获得 ${gain} 金币！`);
+          } else {
+            s.gold += 15;
+            addLog(`💸 投资遇挫，仅收回 15 金币。`);
+          }
+      }}
+    ];
+
+    // 抉择型事件
+    const EVENTS = [
+      { id: "drought", weight: 4, icon: "🌞", title: "旱灾来袭",
+        desc: "今年雨水稀少，农田收成大减，粮价飞涨。",
+        choices: [
+          { label: "拨款 30 金币赈灾", effect: s => {
+              s.gold -= 30; s.food -= 20; s.morale = clamp(s.morale + 4, 0, 100);
+              addLog(`🌞 拨粮赈灾，民心稍安，但粮食仍减产。`);
+          }},
+          { label: "听天由命", effect: s => {
+              s.food -= 60; s.morale = clamp(s.morale - 8, 0, 100); s.population = Math.max(0, s.population - 3);
+              addLog(`🌞 旱灾肆虐，粮仓见底，人口流失。`);
+          }}
+        ]},
+      { id: "bandits", weight: 4, icon: "🏴", title: "盗匪劫掠",
+        desc: "一群盗匪在边境村落烧杀抢掠。",
+        choices: [
+          { label: "出兵围剿", effect: s => {
+              if (s.army >= 12) {
+                s.army = Math.max(0, s.army - 3);
+                addLog(`🏴 军队大胜盗匪，缴获 35 金币，损失 3 名士兵。`);
+                s.gold += 35; s.morale = clamp(s.morale + 5, 0, 100);
+              } else {
+                s.army = Math.max(0, s.army - 2); s.gold = Math.max(0, s.gold - 25); s.food = Math.max(0, s.food - 25);
+                addLog(`🏴 军队力有不逮，村落被劫，损失惨重。`);
+                s.morale = clamp(s.morale - 6, 0, 100);
+              }
+          }},
+          { label: "支付 40 金币买平安", effect: s => {
+              s.gold -= 40; s.morale = clamp(s.morale - 2, 0, 100);
+              addLog(`🏴 盗匪拿了赎金离去，国库受损。`);
+          }}
+        ]},
+      { id: "plague", weight: 3, icon: "🦠", title: "瘟疫流行",
+        desc: "王国内爆发疫病，百姓人心惶惶。",
+        choices: [
+          { label: "花 40 金币购药防疫", effect: s => {
+              s.gold -= 40; s.population = Math.max(0, s.population - 2); s.morale = clamp(s.morale - 2, 0, 100);
+              addLog(`🦠 药材及时送达，疫情得到控制。`);
+          }},
+          { label: "封锁疫区，不花国库", effect: s => {
+              s.population = Math.max(0, s.population - 8); s.morale = clamp(s.morale - 10, 0, 100);
+              addLog(`🦠 疫病扩散，民众大量病亡，怨声载道。`);
+          }}
+        ]},
+      { id: "merchant", weight: 3, icon: "🧭", title: "远洋商队",
+        desc: "远方商队带来珍稀货物，可低价收购转卖。",
+        choices: [
+          { label: "投资 50 金币进货", effect: s => {
+              s.gold -= 50;
+              if (Math.random() < 0.6) {
+                const gain = 70 + Math.floor(Math.random() * 40);
+                s.gold += gain;
+                addLog(`🧭 商队归来大赚一笔，净赚 ${gain - 50} 金币！`);
+              } else {
+                s.gold += 25;
+                addLog(`🧭 货物滞销，仅收回 25 金币。`);
+              }
+          }},
+          { label: "婉言谢绝", effect: s => {
+              addLog(`🧭 你婉拒了商队，国库分文未动。`);
+          }}
+        ]},
+      { id: "refugees", weight: 3, icon: "🏕️", title: "邻国流民",
+        desc: "战乱邻国的流民在边境聚集，希望入籍。",
+        choices: [
+          { label: "接纳流民（耗粮 30）", effect: s => {
+              s.food -= 30; s.population += 8; s.morale = clamp(s.morale + 3, 0, 100);
+              addLog(`🏕️ 流民入籍，人口 +8，粮仓见薄。`);
+          }},
+          { label: "关闭边境", effect: s => {
+              s.morale = clamp(s.morale - 3, 0, 100);
+              addLog(`🏕️ 边境关闭，流民失望离去。`);
+          }}
+        ]},
+      { id: "nobles", weight: 3, icon: "🎩", title: "贵族进谏",
+        desc: "贵族们要求减免他们的税赋，并索取封地。",
+        choices: [
+          { label: "答应贵族（耗 30 金币）", effect: s => {
+              s.gold -= 30; s.morale = clamp(s.morale - 2, 0, 100);
+              addLog(`🎩 贵族满意而归，平民却暗生不满。`);
+          }},
+          { label: "强硬驳回", effect: s => {
+              s.morale = clamp(s.morale + 5, 0, 100);
+              addLog(`🎩 你当众驳回贵族，民心大快，贵族怀恨。`);
+          }}
+        ]},
+      { id: "mine", weight: 3, icon: "⛏️", title: "发现矿脉",
+        desc: "农夫在城郊挖出了金矿矿脉。",
+        choices: [
+          { label: "投入 40 金币开采", effect: s => {
+              s.gold -= 40; s.gold += 70;
+              addLog(`⛏️ 矿脉开采成功，获得 70 金币！`);
+          }},
+          { label: "封存矿脉", effect: s => {
+              addLog(`⛏️ 矿脉被封存，留待来日。`);
+          }}
+        ]}
+    ];
+
+    // 新闻事件
+    const NEWS = [
+      { icon: "🍎", title: "丰收之年", desc: "风调雨顺，粮食满仓。", effect: s => { s.food += 80; addLog(`🍎 大丰收，粮食 +80。`); } },
+      { icon: "💰", title: "商税充盈", desc: "商路畅通，关税喜人。", effect: s => { s.gold += 40; addLog(`💰 关税充盈，金币 +40。`); } },
+      { icon: "🌊", title: "河水泛滥", desc: "河水冲毁农田，收成受损。", effect: s => { s.food = Math.max(0, s.food - 40); s.morale = clamp(s.morale - 3, 0, 100); addLog(`🌊 水患成灾，粮食 -40。`); } },
+      { icon: "🧙", title: "贤者来访", desc: "游历贤者献上治国良策。", effect: s => { s.morale = clamp(s.morale + 5, 0, 100); addLog(`🧙 贤者献策，民心 +5。`); } },
+      { icon: "🛡️", title: "边境安定", desc: "边境传来捷报，匪患平息。", effect: s => { s.morale = clamp(s.morale + 4, 0, 100); addLog(`🛡️ 边境安定，民心 +4。`); } },
+      { icon: "🐭", title: "鼠患成灾", desc: "粮仓遭鼠群啃食。", effect: s => { s.food = Math.max(0, s.food - 30); addLog(`🐭 鼠患严重，粮食 -30。`); } }
+    ];
+
+    // ---------- 工具函数 ----------
+    const $ = id => document.getElementById(id);
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    const rint = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+    function addLog(text) {
+      const logEl = $("log");
+      const item = document.createElement("div");
+      item.className = "log-item";
+      item.innerHTML = `<span class="t">${state.year} 年 · </span>${text}`;
+      logEl.prepend(item);
+      while (logEl.children.length > 30) logEl.removeChild(logEl.lastChild);
+    }
+
+    function renderStats() {
+      const s = state;
+      const gold = $("statGold"), food = $("statFood");
+      gold.textContent = Math.floor(s.gold);
+      gold.className = "value" + (s.gold < 0 ? " negative" : "");
+      food.textContent = Math.floor(s.food);
+      food.className = "value" + (s.food < 0 ? " negative" : "");
+      $("statPop").textContent = Math.floor(s.population);
+      $("statArmy").textContent = Math.floor(s.army);
+      $("statMorale").textContent = Math.floor(s.morale);
+      $("moraleBar").style.width = s.morale + "%";
+      $("yearBadge").textContent = `第 ${s.year} 年`;
+    }
+
+    function show(view) {
+      $("turnView").style.display = view === "turn" ? "" : "none";
+      $("eventView").style.display = view === "event" ? "" : "none";
+    }
+
+    // ---------- 回合流程 ----------
+    function startTurn() {
+      const s = state;
+      renderStats();
+      show("turn");
+      $("turnTitle").textContent = `第 ${s.year} 年 · 王国政务`;
+      const list = $("actionList");
+      list.innerHTML = "";
+      ACTIONS.forEach(a => {
+        const btn = document.createElement("button");
+        btn.className = "action-btn";
+        btn.innerHTML = `<div class="name">${a.icon} ${a.name}</div><div class="cost">${a.cost}</div>`;
+        btn.onclick = () => {
+          a.effect(s);
+          renderStats();
+          resolveYear();
+        };
+        list.appendChild(btn);
+      });
+      updateTaxUI();
+      $("turnDesc").textContent = "选择一项本年度要推行的政令，随后王国将迎来年终结算与事件。";
+    }
+
+    function setTax(rate) {
+      state.taxRate = rate;
+      updateTaxUI();
+      addLog(`⚖️ 税率调整为「${TAX_INFO[rate].label}」。`);
+    }
+
+    function updateTaxUI() {
+      document.querySelectorAll(".tax-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.rate === state.taxRate);
+      });
+      const info = TAX_INFO[state.taxRate];
+      $("taxHint").textContent = `税收 ${info.income} 金币/人` + (info.morale ? `，民心 ${info.morale > 0 ? "+" : ""}${info.morale}` : "");
+    }
+
+    function resolveYear() {
+      const s = state;
+      const lines = [];
+      const tax = TAX_INFO[s.taxRate];
+
+      // 税收
+      const income = Math.floor(s.population * tax.income);
+      s.gold += income;
+      s.morale = clamp(s.morale + tax.morale, 0, 100);
+      lines.push(`税收 +${income} 金币`);
+
+      // 军饷
+      const upkeep = Math.floor(s.army * 2);
+      s.gold -= upkeep;
+      if (s.gold < -150) {
+        const desert = Math.max(1, Math.floor(s.army * 0.3));
+        s.army = Math.max(0, s.army - desert);
+        s.morale = clamp(s.morale - 5, 0, 100);
+        lines.push(`国库空虚，${desert} 名士兵哗变逃走`);
+      } else {
+        lines.push(`军饷 -${upkeep} 金币`);
+      }
+
+      // 粮食收支
+      const production = 100 + s.farms * 20;
+      const consumption = s.population * 2 + s.army * 3;
+      const surplus = production - consumption;
+      s.food += surplus;
+      if (surplus >= 0) {
+        lines.push(`粮食 +${surplus}`);
+      } else {
+        lines.push(`粮食 -${-surplus}`);
+      }
+
+      // 缺粮惩罚
+      if (s.food < 0) {
+        const starved = Math.min(Math.floor(s.population * 0.1) + 1, Math.ceil(-s.food / 10));
+        s.population = Math.max(0, s.population - starved);
+        s.morale = clamp(s.morale - 8, 0, 100);
+        s.food = 0;
+        lines.push(`${starved} 人因缺粮饿死，民心 -8`);
+      } else if (surplus > 40) {
+        // 人口增长
+        const growth = Math.floor(surplus / 25) + (s.morale >= 65 ? 2 : 0);
+        s.population += growth;
+        lines.push(`人口 +${growth}`);
+      }
+
+      // 显示结算
+      $("eventView").innerHTML = `
+        <h2>年终结算</h2>
+        <div class="summary">${lines.map(l => `<span class="line">${l.startsWith("国库空虚") ? `<span class="bad">${l}</span>` : l.startsWith("税收") || l.startsWith("粮食 +") || l.startsWith("人口 +") ? `<span class="good">${l}</span>` : l}</span>`).join("")}</div>`;
+      renderStats();
+
+      if (checkLose()) return;
+
+      // 触发事件
+      setTimeout(() => pickEvent(), 60);
+    }
+
+    function pickEvent() {
+      const s = state;
+      if (Math.random() < 0.62) {
+        const pool = [];
+        EVENTS.forEach(ev => { for (let i = 0; i < ev.weight; i++) pool.push(ev); });
+        const ev = pool[Math.floor(Math.random() * pool.length)];
+        let html = `<div class="event-title">${ev.icon} ${ev.title}</div>
+                    <div class="event-desc">${ev.desc}</div>`;
+        ev.choices.forEach((c, i) => {
+          html += `<button class="choice-btn" id="choice${i}">${c.label}</button>`;
+        });
+        $("eventView").innerHTML += html;
+        show("event");
+        ev.choices.forEach((c, i) => {
+          $(`choice${i}`).onclick = () => {
+            c.effect(s);
+            renderStats();
+            addLog(`${ev.icon} ${ev.title}`);
+            endYear();
+          };
+        });
+      } else {
+        const news = NEWS[Math.floor(Math.random() * NEWS.length)];
+        $("eventView").innerHTML += `
+          <div class="event-title">${news.icon} ${news.title}</div>
+          <div class="event-desc">${news.desc}</div>
+          <button class="choice-btn" id="newsOk">知道了</button>`;
+        show("event");
+        $("newsOk").onclick = () => {
+          news.effect(s);
+          renderStats();
+          addLog(`${news.icon} ${news.title}`);
+          endYear();
+        };
+      }
+    }
+
+    function endYear() {
+      const s = state;
+      if (checkLose()) return;
+      s.year += 1;
+      if (s.year > 20) {
+        const pop = Math.floor(s.population);
+        if (pop >= 150 && s.morale >= 60) {
+          showEnding("win", "伟大王国", `你治下的王国人口已达 ${pop}，民心 ${Math.floor(s.morale)}，成为这片大陆上最伟大的国度！`, "👑");
+        } else if (pop >= 100) {
+          showEnding("win", "和平延续", `二十年风雨过去，王国延续至今，人民安居乐业。最终人口 ${pop}。`, "🏰");
+        } else {
+          showEnding("lose", "王国衰败", "二十年过去，王国未能壮大，渐渐被历史遗忘。", "🥀");
+        }
+        return;
+      }
+      startTurn();
+    }
+
+    function checkLose() {
+      const s = state;
+      if (s.population <= 0) { showEnding("lose", "人口耗尽", "瘟疫与饥荒带走了最后一个子民，你的王国化为废墟。", "💀"); return true; }
+      if (s.morale <= 0) { showEnding("lose", "民怨爆发", "百姓不堪压迫揭竿而起，王座被付之一炬。", "🔥"); return true; }
+      if (s.gold <= -200) { showEnding("lose", "国库破产", "债台高筑，王国的信用彻底崩溃。", "💸"); return true; }
+      return false;
+    }
+
+    function showEnding(type, title, desc, icon) {
+      $("endIcon").textContent = icon;
+      $("endTitle").textContent = title;
+      $("endDesc").textContent = desc;
+      const s = state;
+      const stats = [
+        ["金币", Math.floor(s.gold)], ["粮食", Math.floor(s.food)],
+        ["人口", Math.floor(s.population)], ["军队", Math.floor(s.army)], ["民心", Math.floor(s.morale)]
+      ];
+      $("endStats").innerHTML = stats.map(([k, v]) => `<div class="e"><b>${v}</b>${k}</div>`).join("");
+      $("endOverlay").classList.remove("hidden");
+    }
+
+    function startGame() {
+      state = {
+        year: 1, gold: 100, food: 200, population: 50,
+        army: 10, morale: 70, taxRate: "normal", farms: 1
+      };
+      $("startOverlay").classList.add("hidden");
+      $("endOverlay").classList.add("hidden");
+      $("log").innerHTML = "";
+      addLog("👑 你登上了王座，王国百废待兴。");
+      startTurn();
+    }
+
+    function restart() {
+      $("endOverlay").classList.add("hidden");
+      $("startOverlay").classList.remove("hidden");
+    }
+
+    // 初始显示开始界面
+    $("startOverlay").classList.remove("hidden");
+  </script>
+</body>
+</html>
